@@ -7,32 +7,23 @@ import (
 	noise "github.com/ojrac/opensimplex-go"
 )
 
+// Options are used to generate the image map. You can set
+// the width, height, octaves, seed, scale, persistence
+// and lacunatiry.
 type Options struct {
 	Width       int
 	Height      int
 	Octaves     int
 	Seed        int64
 	Scale       float64
-	Persistante float64
+	Persistence float64
 	Lacunarity  float64
 }
 
-func makeMap(width, height int) [][]float64 {
-	slice := make([][]float64, height)
-	for i := range slice {
-		slice[i] = make([]float64, width)
-	}
-
-	return slice
-}
-
-func lerp(v0, v1, t float64) float64 {
-	t = t - v0
-	v1 = v1 - v0
-	return t / v1
-}
-
-func Generate(o *Options) image.Image {
+// Generate generates a image using the options object you defined.
+// It returns an image that can be saved to a file or used to be
+// later parsed.
+func Generate(o *Options) (image.Image, error) {
 	img := image.NewRGBA(image.Rect(0, 0, o.Width, o.Height))
 	p := noise.NewNormalized(o.Seed)
 	elev := makeMap(o.Width, o.Height)
@@ -51,7 +42,7 @@ func Generate(o *Options) image.Image {
 				sY := float64(y) / o.Scale * frequency
 				noise += p.Eval2(sX, sY) * amplitude
 
-				amplitude *= o.Persistante
+				amplitude *= o.Persistence
 				frequency *= o.Lacunarity
 			}
 
@@ -64,10 +55,28 @@ func Generate(o *Options) image.Image {
 	for y := range elev {
 		for x := range elev[y] {
 			noise := lerp(min, max, elev[y][x])
-			color, _ := biome(noise)
+			color, err := biome(noise)
+
+			if err != nil {
+				return nil, err
+			}
+
 			img.Set(x, y, color)
 		}
 	}
 
-	return img
+	return img, nil
+}
+
+func makeMap(width, height int) [][]float64 {
+	slice := make([][]float64, height)
+	for i := range slice {
+		slice[i] = make([]float64, width)
+	}
+
+	return slice
+}
+
+func lerp(v0, v1, t float64) float64 {
+	return (t - v0) / (v1 - v0)
 }
