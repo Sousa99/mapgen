@@ -18,6 +18,7 @@ type Options struct {
 	Scale       float64
 	Persistence float64
 	Lacunarity  float64
+	Transition  bool
 }
 
 // Generate generates a image using the options object you defined.
@@ -55,7 +56,7 @@ func Generate(o *Options) (image.Image, error) {
 	for y := range elev {
 		for x := range elev[y] {
 			noise := lerp(min, max, elev[y][x])
-			color, err := biome(noise)
+			color, err := biome(noise, o.Transition)
 
 			if err != nil {
 				return nil, err

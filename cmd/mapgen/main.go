@@ -24,6 +24,7 @@ var (
 	scale       float64
 	persistence float64
 	lacunarity  float64
+	transition 	bool
 	filename    string
 )
 
@@ -35,6 +36,7 @@ func init() {
 	pflag.Float64VarP(&scale, "scale", "x", 20.0, "Scale")
 	pflag.Float64VarP(&persistence, "persistence", "p", 0.5, "persistence")
 	pflag.Float64VarP(&lacunarity, "lacunarity", "l", 2.5, "Lacunarity")
+	pflag.BoolVarP(&transition, "color transition", "t", false, "Color Transition in map generation")
 	pflag.StringVarP(&filename, "filename", "f", "img.png", "File name to output")
 }
 
@@ -72,6 +74,7 @@ func main() {
 		Scale:       scale,
 		Persistence: persistence,
 		Lacunarity:  lacunarity,
+		Transition:	 transition,
 	}
 
 	img, err := mapgen.Generate(options)
