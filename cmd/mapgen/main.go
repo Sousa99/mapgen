@@ -38,7 +38,7 @@ func init() {
 	pflag.Float64VarP(&persistence, "persistence", "p", 0.5, "persistence")
 	pflag.Float64VarP(&lacunarity, "lacunarity", "l", 2.5, "Lacunarity")
 	pflag.BoolVarP(&transition, "color transition", "t", false, "Color Transition in map generation overrites color palette transition")
-	pflag.StringVarP(&colorsFile, "colors filename", "c", "terrain.txt", "File name with the color palette")
+	pflag.StringVarP(&colorsFile, "colors filename", "c", "defaultPalette.txt", "File name with the color palette")
 	pflag.StringVarP(&filename, "filename", "f", "img.png", "File name to output")
 }
 

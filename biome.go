@@ -25,14 +25,12 @@ func crunchSplitFunc(data []byte, atEOF bool) (advance int, token []byte, err er
 		return 0, nil, nil
 	}
 
-	// Find the index of the input of a ";"
+	// Find the index of the input of a ";" or "\n" accordingly
 	i := strings.Index(string(data), ";")
 	j := strings.Index(string(data), "\n")
 	if j < i && j >= 0 {
-		i = j
-	}
-
-	if i >= 0 {
+		return j + 1, data[0:j], nil
+	} else if i >= 0 {
 		return i + 1, data[0:i], nil
 	}
 
