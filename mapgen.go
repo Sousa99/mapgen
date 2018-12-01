@@ -19,6 +19,7 @@ type Options struct {
 	Persistence float64
 	Lacunarity  float64
 	Transition  bool
+	ColorsFile  string
 }
 
 // Generate generates a image using the options object you defined.
@@ -53,10 +54,11 @@ func Generate(o *Options) (image.Image, error) {
 		}
 	}
 
+	gradient := GenerateGradient(o.ColorsFile, o.Transition)
 	for y := range elev {
 		for x := range elev[y] {
 			noise := lerp(min, max, elev[y][x])
-			color, err := biome(noise, o.Transition)
+			color, err := gradient.biome(noise)
 
 			if err != nil {
 				return nil, err

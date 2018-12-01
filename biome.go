@@ -1,7 +1,11 @@
 package mapgen
 
 import (
+	"bufio"
 	"image/color"
+	"os"
+	"strconv"
+	"strings"
 
 	"github.com/lucasb-eyer/go-colorful"
 )
@@ -14,29 +18,72 @@ type GradientTable []struct {
 	Transition bool
 }
 
-// This is the meat of the gradient computation. It returns a LAB-blend between
-// the two colors around `t` respecting transition
-// Note: It relies heavily on the fact that the gradient keypoints are sorted.
-func (self GradientTable) GetInterpolatedColorFor(t float64) colorful.Color {
-	for i := 0; i < len(self)-1; i++ {
-		c1 := self[i]
-		c2 := self[i+1]
-		if c1.Pos <= t && t <= c2.Pos {
-			// We are in between c1 and c2. Go blend them!
-			if c1.Transition {
-				t := (t - c1.Pos) / (c2.Pos - c1.Pos)
-				return c1.Color.BlendLab(c2.Color, t).Clamped()
-			}
+func crunchSplitFunc(data []byte, atEOF bool) (advance int, token []byte, err error) {
 
-			if t-c1.Pos < c2.Pos-t {
-				return c1.Color
-			} else {
-				return c2.Color
-			}
-		}
+	// Return nothing if at end of file and no data passed
+	if atEOF && len(data) == 0 {
+		return 0, nil, nil
 	}
 
-	return self[len(self)-1].Color
+	// Find the index of the input of a ";"
+	i := strings.Index(string(data), ";")
+	j := strings.Index(string(data), "\n")
+	if j < i && j >= 0 {
+		i = j
+	}
+
+	if i >= 0 {
+		return i + 1, data[0:i], nil
+	}
+
+	// If at end of file with data return the data
+	if atEOF {
+		return len(data), data, nil
+	}
+
+	return
+}
+
+// GenerateGradient generates a gradient with the information given,
+// in filename, by user
+func GenerateGradient(filename string, transitionFlag bool) GradientTable {
+	file, _ := os.Open(filename)
+	scannerLines := bufio.NewScanner(file)
+	scanner := bufio.NewScanner(file)
+	scanner.Split(crunchSplitFunc)
+
+	// TODO: Improve scannerLines
+	lines := 0
+	for scannerLines.Scan() {
+		lines++
+	}
+
+	gradient := make(GradientTable, lines)
+
+	i := 0
+	file.Seek(0, 0)
+	for scanner.Scan() {
+		gradient[i].Color = MustParseHex(scanner.Text())
+
+		scanner.Scan()
+		gradient[i].Pos, _ = strconv.ParseFloat(scanner.Text(), 64)
+
+		scanner.Scan()
+		gradient[i].Transition, _ = strconv.ParseBool(scanner.Text())
+		gradient[i].Transition = gradient[i].Transition || transitionFlag
+
+		i++
+	}
+
+	return gradient
+
+}
+
+// Checks error
+func check(err error) {
+	if err != nil {
+		panic(err)
+	}
 }
 
 // This is a very nice thing Golang forces you to do!
@@ -46,18 +93,25 @@ func MustParseHex(s string) colorful.Color {
 	return c
 }
 
-func biome(e float64, transition bool) (color.Color, error) {
+func (self GradientTable) biome(e float64) (color.Color, error) {
 
-	keypoints := GradientTable{
-		{MustParseHex("#0a1778"), 0.0, true},
-		{MustParseHex("#3766c8"), 0.3, false},
-		{MustParseHex("#d0d080"), 0.4, true},
-		{MustParseHex("#589619"), 0.45, true},
-		{MustParseHex("#5c453e"), 0.60, true},
-		{MustParseHex("#4d3b39"), 0.70, true},
-		{MustParseHex("#ffffff"), 0.80, true},
-		{MustParseHex("#ffffff"), 1, true},
+	for i := 0; i < len(self)-1; i++ {
+		c1 := self[i]
+		c2 := self[i+1]
+		if c1.Pos <= e && e <= c2.Pos {
+			// We are in between c1 and c2. Go blend them!
+			if c1.Transition {
+				e := (e - c1.Pos) / (c2.Pos - c1.Pos)
+				return c1.Color.BlendLab(c2.Color, e).Clamped(), nil
+			}
+
+			if e-c1.Pos < c2.Pos-e {
+				return c1.Color, nil
+			} else {
+				return c2.Color, nil
+			}
+		}
 	}
 
-	return keypoints.GetInterpolatedColorFor(e), nil
+	return self[len(self)-1].Color, nil
 }
