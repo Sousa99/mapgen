@@ -10,7 +10,7 @@ import (
 	"github.com/lucasb-eyer/go-colorful"
 )
 
-// This table contains the "keypoints" of the colorgradient you want to generate.
+// GradientTable contains the "keypoints" of the colorgradient you want to generate.
 // The position of each keypoint has to live in the range [0,1]
 type GradientTable []struct {
 	Color      colorful.Color
@@ -45,12 +45,13 @@ func crunchSplitFunc(data []byte, atEOF bool) (advance int, token []byte, err er
 // GenerateGradient generates a gradient with the information given,
 // in filename, by user
 func GenerateGradient(filename string, transitionFlag bool) GradientTable {
-	file, _ := os.Open(filename)
+	file, err := os.Open(filename)
+	check(err)
+
 	scannerLines := bufio.NewScanner(file)
 	scanner := bufio.NewScanner(file)
 	scanner.Split(crunchSplitFunc)
 
-	// TODO: Improve scannerLines
 	lines := 0
 	for scannerLines.Scan() {
 		lines++
@@ -61,13 +62,15 @@ func GenerateGradient(filename string, transitionFlag bool) GradientTable {
 	i := 0
 	file.Seek(0, 0)
 	for scanner.Scan() {
-		gradient[i].Color = MustParseHex(scanner.Text())
+		gradient[i].Color = ParseHex(scanner.Text())
 
 		scanner.Scan()
-		gradient[i].Pos, _ = strconv.ParseFloat(scanner.Text(), 64)
+		gradient[i].Pos, err = strconv.ParseFloat(scanner.Text(), 64)
+		check(err)
 
 		scanner.Scan()
-		gradient[i].Transition, _ = strconv.ParseBool(scanner.Text())
+		gradient[i].Transition, err = strconv.ParseBool(scanner.Text())
+		check(err)
 		gradient[i].Transition = gradient[i].Transition || transitionFlag
 
 		i++
@@ -77,27 +80,27 @@ func GenerateGradient(filename string, transitionFlag bool) GradientTable {
 
 }
 
-// Checks error
 func check(err error) {
 	if err != nil {
 		panic(err)
 	}
 }
 
-// This is a very nice thing Golang forces you to do!
-// It is necessary so that we can write out the literal of the colortable below.
-func MustParseHex(s string) colorful.Color {
-	c, _ := colorful.Hex(s)
+// ParseHex parses string to hex color
+func ParseHex(s string) colorful.Color {
+	c, err := colorful.Hex(s)
+	check(err)
+
 	return c
 }
 
+// biome constrcuts the biome according to the gradientTable given
 func (self GradientTable) biome(e float64) (color.Color, error) {
 
 	for i := 0; i < len(self)-1; i++ {
 		c1 := self[i]
 		c2 := self[i+1]
 		if c1.Pos <= e && e <= c2.Pos {
-			// We are in between c1 and c2. Go blend them!
 			if c1.Transition {
 				e := (e - c1.Pos) / (c2.Pos - c1.Pos)
 				return c1.Color.BlendLab(c2.Color, e).Clamped(), nil
