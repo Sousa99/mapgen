@@ -19,7 +19,6 @@ type GradientTable []struct {
 }
 
 func crunchSplitFunc(data []byte, atEOF bool) (advance int, token []byte, err error) {
-
 	// Return nothing if at end of file and no data passed
 	if atEOF && len(data) == 0 {
 		return 0, nil, nil
@@ -94,9 +93,8 @@ func ParseHex(s string) colorful.Color {
 	return c
 }
 
-// biome constrcuts the biome according to the gradientTable given
+// GradientTable biome constrcuts the biome according to the gradientTable given
 func (self GradientTable) biome(e float64) (color.Color, error) {
-
 	for i := 0; i < len(self)-1; i++ {
 		c1 := self[i]
 		c2 := self[i+1]
